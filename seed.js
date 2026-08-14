@@ -113,25 +113,25 @@ export const seedData = async () => {
     {
       displayName: 'Priya Sharma', realName: 'Priya Kumari Sharma', city: 'Mumbai', languages: 'Hindi, English',
       about: 'Loves deep conversations, acoustic music, and coffee dates. Talk to me anytime! ✨',
-      interests: 'Music, Travel, Photography, Cooking', audioRate: 6, videoRate: 20, online: 'online', verified: 1, featured: 1, rec: 1,
+      interests: 'Music, Travel, Photography, Cooking', audioRate: 6, videoRate: 25, online: 'online', verified: 1, featured: 1, rec: 1,
       photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80'
     },
     {
       displayName: 'Ananya Roy', realName: 'Ananya Devi Roy', city: 'Kolkata', languages: 'Bengali, Hindi, English',
       about: 'Passionate dancer & bookworm. Looking for friendly chats and good vibes 🌸',
-      interests: 'Dancing, Books, Movies, Art', audioRate: 6, videoRate: 20, online: 'online', verified: 1, featured: 1, rec: 1,
+      interests: 'Dancing, Books, Movies, Art', audioRate: 6, videoRate: 25, online: 'online', verified: 1, featured: 1, rec: 1,
       photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80'
     },
     {
       displayName: 'Sneha Patel', realName: 'Sneha Jayesh Patel', city: 'Ahmedabad', languages: 'Gujarati, Hindi, English',
       about: 'Fashion enthusiast and tech lover. Friendly and cheerful host!',
-      interests: 'Fashion, Shopping, Fitness', audioRate: 6, videoRate: 20, online: 'online', verified: 1, featured: 0, rec: 1,
+      interests: 'Fashion, Shopping, Fitness', audioRate: 6, videoRate: 25, online: 'online', verified: 1, featured: 0, rec: 1,
       photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80'
     },
     {
       displayName: 'Riya Verma', realName: 'Riya Ramesh Verma', city: 'Delhi', languages: 'Hindi, Punjabi, English',
       about: 'Bubbly personality with a smile that brightens your day! Call me for a chat 💛',
-      interests: 'Foodie, Stand-up Comedy, Pets', audioRate: 6, videoRate: 20, online: 'online', verified: 1, featured: 1, rec: 1,
+      interests: 'Foodie, Stand-up Comedy, Pets', audioRate: 6, videoRate: 25, online: 'online', verified: 1, featured: 1, rec: 1,
       photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80'
     },
     {
