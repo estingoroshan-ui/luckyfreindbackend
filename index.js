@@ -5,6 +5,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initDb } from './db.js';
@@ -26,19 +27,36 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Database schema
-await initDb();
+try {
+  await initDb();
+  console.log('Database initialized successfully');
+} catch (err) {
+  console.error('Failed to initialize DB:', err);
+}
 
 // Register API Routes
 app.use('/api', createApiRouter(io));
 
-// Serve static frontend files in production if needed
-const distPath = path.resolve(__dirname, '../dist');
-app.use(express.static(distPath));
-
-// SPA wildcard fallback route for production domain deployment
-app.get('*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+// Health check route
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Serve static frontend files in production if available
+const localDistPath = path.resolve(__dirname, './dist');
+const parentDistPath = path.resolve(__dirname, '../dist');
+
+if (fs.existsSync(localDistPath)) {
+  app.use(express.static(localDistPath));
+  app.get('*', (req, res) => res.sendFile(path.join(localDistPath, 'index.html')));
+} else if (fs.existsSync(parentDistPath)) {
+  app.use(express.static(parentDistPath));
+  app.get('*', (req, res) => res.sendFile(path.join(parentDistPath, 'index.html')));
+} else {
+  app.get('/', (req, res) => {
+    res.json({ status: 'online', message: 'Friendly Dating Backend API Server is running successfully!' });
+  });
+}
 
 // Socket.IO signaling and real-time events
 io.on('connection', (socket) => {
