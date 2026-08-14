@@ -27,12 +27,13 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Database schema
-try {
-  await initDb();
-  console.log('Database initialized successfully');
-} catch (err) {
-  console.error('Failed to initialize DB:', err);
-}
+initDb()
+  .then(() => {
+    console.log('Database initialized successfully');
+  })
+  .catch((err) => {
+    console.error('Failed to initialize DB:', err);
+  });
 
 // Register API Routes
 app.use('/api', createApiRouter(io));
