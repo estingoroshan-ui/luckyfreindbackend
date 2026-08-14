@@ -4,7 +4,7 @@ export const seedData = async () => {
   console.log('Seeding default settings...');
   const defaultSettings = [
     ['app_name', 'Lucky Friends'],
-    ['app_logo', '/logo.jpg'],
+    ['app_logo', '/logo.png'],
     ['primary_color', '#ec4899'],
     ['accent_color', '#8b5cf6'],
     ['currency_symbol', '₹'],
