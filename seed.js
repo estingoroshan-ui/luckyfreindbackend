@@ -1,6 +1,6 @@
 import { initDb, run, getOne, query } from './db.js';
 
-const seedData = async () => {
+export const seedData = async () => {
   console.log('Initializing database tables...');
   await initDb();
 
@@ -396,6 +396,8 @@ const seedData = async () => {
   console.log('Database seeding completed successfully!');
 };
 
-seedData().catch((err) => {
-  console.error('Error seeding data:', err);
-});
+if (import.meta.url === `file://${process.argv[1]}` || (process.argv[1] && process.argv[1].includes('seed.js'))) {
+  seedData().catch((err) => {
+    console.error('Error seeding data:', err);
+  });
+}

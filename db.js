@@ -282,6 +282,18 @@ export const initDb = async () => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Auto-seed sample hosts and settings if DB is freshly created
+  try {
+    const userCheck = await getOne(`SELECT COUNT(*) as count FROM users`);
+    if (!userCheck || userCheck.count === 0) {
+      console.log('Database empty. Auto-seeding initial creators and settings...');
+      const { seedData } = await import('./seed.js');
+      await seedData();
+    }
+  } catch (err) {
+    console.error('Auto seed check error:', err);
+  }
 };
 
 export default db;
