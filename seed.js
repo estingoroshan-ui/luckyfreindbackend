@@ -1,9 +1,6 @@
-import { initDb, run, getOne, query } from './db.js';
+import { run, getOne, query } from './db.js';
 
 export const seedData = async () => {
-  console.log('Initializing database tables...');
-  await initDb();
-
   console.log('Seeding default settings...');
   const defaultSettings = [
     ['app_name', 'Lucky Friends'],
