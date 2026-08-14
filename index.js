@@ -48,11 +48,29 @@ const localDistPath = path.resolve(__dirname, './dist');
 const parentDistPath = path.resolve(__dirname, '../dist');
 
 if (fs.existsSync(localDistPath)) {
-  app.use(express.static(localDistPath));
-  app.get('*', (req, res) => res.sendFile(path.join(localDistPath, 'index.html')));
+  app.use(express.static(localDistPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+  app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(localDistPath, 'index.html'));
+  });
 } else if (fs.existsSync(parentDistPath)) {
-  app.use(express.static(parentDistPath));
-  app.get('*', (req, res) => res.sendFile(path.join(parentDistPath, 'index.html')));
+  app.use(express.static(parentDistPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+  app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(parentDistPath, 'index.html'));
+  });
 } else {
   app.get('/', (req, res) => {
     res.json({ status: 'online', message: 'Friendly Dating Backend API Server is running successfully!' });
