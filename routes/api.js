@@ -207,6 +207,9 @@ export const createApiRouter = (io) => {
     try {
       const { category, search, city, language } = req.query;
 
+      // Force update all profile rates to Audio = 6 and Video = 25
+      await run(`UPDATE female_profiles SET audio_rate = 6, video_rate = 25`).catch(() => {});
+
       let sql = `
         SELECT fp.*, u.city as u_city, u.profile_photo, u.created_at
         FROM female_profiles fp
