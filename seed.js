@@ -390,6 +390,31 @@ export const seedData = async () => {
     }
   }
 
+  // Seed Subscription Plans
+  console.log('Seeding Subscription Plans...');
+  const planCheck = await getOne(`SELECT COUNT(*) as count FROM subscription_plans`);
+  if (planCheck.count === 0) {
+    const plans = [
+      ['Weekly VIP Pass', 199, 7, 'POPULAR', 'Unlimited Super Likes, See Who Liked You, 5 Free Audio Call Mins, Verified Badge Access'],
+      ['Monthly Gold Member', 599, 30, 'BEST VALUE', 'Unlimited Messages, Advanced Location Filters, 15 Free Call Mins, Profile Boost 2x/week, See Visitors'],
+      ['Quarterly Royal VIP', 1499, 90, 'ROYAL', 'VIP Priority Match Badge, Direct Host Audio/Video Discount 20%, Unlimited Rewind & Incognito Mode']
+    ];
+    for (const [name, price, duration, badge, features] of plans) {
+      await run(`INSERT INTO subscription_plans (name, price, duration_days, badge, features, status) VALUES (?, ?, ?, ?, ?, 'active');`, [name, price, duration, badge, features]);
+    }
+  }
+
+  // Seed Sample Support Ticket
+  const ticketCheck = await getOne(`SELECT COUNT(*) as count FROM support_tickets`);
+  if (ticketCheck.count === 0) {
+    const maleUser = await getOne(`SELECT id FROM users WHERE role = 'male' LIMIT 1`);
+    if (maleUser) {
+      const resT = await run(`INSERT INTO support_tickets (user_id, subject, category, priority, status) VALUES (?, 'Wallet Payment Confirmation', 'Billing & Wallet', 'normal', 'open');`, [maleUser.id]);
+      await run(`INSERT INTO support_ticket_replies (ticket_id, sender_id, sender_role, message) VALUES (?, ?, 'male', 'Hi, I recharged ₹500 via UPI. Please confirm my promotional bonus credits.');`, [resT.lastID, maleUser.id]);
+      await run(`INSERT INTO support_ticket_replies (ticket_id, sender_id, sender_role, message) VALUES (?, 1, 'admin', 'Hello! Your transaction has been verified and ₹50 bonus credits have been added to your wallet balance.');`, [resT.lastID]);
+    }
+  }
+
   console.log('Database seeding completed successfully!');
 };
 

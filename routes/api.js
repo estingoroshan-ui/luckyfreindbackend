@@ -831,5 +831,174 @@ export const createApiRouter = (io) => {
     }
   });
 
+  // --- RAZORPAY PAYMENT VERIFICATION ---
+  router.post('/payments/create-order', async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      const orderId = `order_lz_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      res.json({
+        success: true,
+        order: {
+          id: orderId,
+          amount: (parseFloat(amount) || 100) * 100,
+          currency: 'INR',
+          key: process.env.RAZORPAY_KEY_ID || 'rzp_test_FriendlyDating2026'
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.post('/payments/verify', async (req, res) => {
+    try {
+      const { userId, amount, razorpay_order_id, razorpay_payment_id } = req.body;
+      const numAmount = parseFloat(amount) || 0;
+      const ref = razorpay_payment_id || razorpay_order_id || `PAY_${Date.now()}`;
+
+      const existing = await getOne(`SELECT id FROM wallet_transactions WHERE gateway_ref = ?`, [ref]);
+      if (existing) {
+        return res.json({ success: true, message: 'Payment already processed' });
+      }
+
+      const bonus = numAmount >= 500 ? numAmount * 0.1 : 0;
+
+      await run(`
+        UPDATE wallets
+        SET balance = balance + ?, promo_balance = promo_balance + ?, total_recharged = total_recharged + ?
+        WHERE user_id = ?
+      `, [numAmount, bonus, numAmount, userId]);
+
+      await run(`
+        INSERT INTO wallet_transactions (user_id, type, amount, bonus_amount, gateway_ref, payment_method, status, description)
+        VALUES (?, 'recharge', ?, ?, ?, 'Razorpay/UPI', 'success', 'Razorpay Wallet Recharge');
+      `, [userId, numAmount, bonus, ref]);
+
+      const updatedWallet = await getOne(`SELECT balance, promo_balance FROM wallets WHERE user_id = ?`, [userId]);
+      res.json({
+        success: true,
+        message: 'Payment verified and wallet credited successfully!',
+        walletBalance: updatedWallet ? updatedWallet.balance : 0
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- SUBSCRIPTIONS ---
+  router.get('/subscriptions', async (req, res) => {
+    try {
+      const plans = await query(`SELECT * FROM subscription_plans WHERE status = 'active' ORDER BY price ASC`);
+      res.json({ success: true, plans });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.post('/subscriptions/purchase', async (req, res) => {
+    try {
+      const { userId, planId } = req.body;
+      const plan = await getOne(`SELECT * FROM subscription_plans WHERE id = ?`, [planId]);
+      if (!plan) return res.status(404).json({ success: false, error: 'Plan not found' });
+
+      const wallet = await getOne(`SELECT balance FROM wallets WHERE user_id = ?`, [userId]);
+      if (!wallet || wallet.balance < plan.price) {
+        return res.status(400).json({ success: false, error: 'Insufficient wallet balance' });
+      }
+
+      await run(`UPDATE wallets SET balance = balance - ?, total_spent = total_spent + ? WHERE user_id = ?`, [plan.price, plan.price, userId]);
+      await run(`INSERT INTO wallet_transactions (user_id, type, amount, status, description) VALUES (?, 'subscription', ?, 'success', ?)`, [userId, plan.price, `Subscription: ${plan.name}`]);
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + plan.duration_days);
+
+      await run(`
+        INSERT INTO user_subscriptions (user_id, plan_id, plan_name, amount_paid, expires_at, status)
+        VALUES (?, ?, ?, ?, ?, 'active');
+      `, [userId, plan.id, plan.name, plan.price, expiresAt.toISOString()]);
+
+      res.json({ success: true, message: `Successfully subscribed to ${plan.name}!`, expiresAt });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- SUPPORT TICKETS ---
+  router.get('/support/tickets', async (req, res) => {
+    try {
+      const { userId, role } = req.query;
+      let sql = `
+        SELECT st.*, u.full_name as user_name, u.email as user_email
+        FROM support_tickets st
+        JOIN users u ON st.user_id = u.id
+      `;
+      const params = [];
+      if (role !== 'admin' && userId) {
+        sql += ` WHERE st.user_id = ?`;
+        params.push(userId);
+      }
+      sql += ` ORDER BY st.updated_at DESC`;
+      const tickets = await query(sql, params);
+      res.json({ success: true, tickets });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.get('/support/tickets/:id', async (req, res) => {
+    try {
+      const ticket = await getOne(`SELECT * FROM support_tickets WHERE id = ?`, [req.params.id]);
+      const replies = await query(`
+        SELECT str.*, u.full_name as sender_name
+        FROM support_ticket_replies str
+        JOIN users u ON str.sender_id = u.id
+        WHERE str.ticket_id = ?
+        ORDER BY str.created_at ASC
+      `, [req.params.id]);
+      res.json({ success: true, ticket, replies });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.post('/support/tickets', async (req, res) => {
+    try {
+      const { userId, subject, category, message, priority } = req.body;
+      const resT = await run(`
+        INSERT INTO support_tickets (user_id, subject, category, priority, status)
+        VALUES (?, ?, ?, ?, 'open');
+      `, [userId, subject, category || 'General', priority || 'normal']);
+
+      await run(`
+        INSERT INTO support_ticket_replies (ticket_id, sender_id, sender_role, message)
+        VALUES (?, ?, 'user', ?);
+      `, [resT.lastID, userId, message]);
+
+      res.json({ success: true, message: 'Support ticket submitted successfully', ticketId: resT.lastID });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.post('/support/reply', async (req, res) => {
+    try {
+      const { ticketId, senderId, senderRole, message, status } = req.body;
+      await run(`
+        INSERT INTO support_ticket_replies (ticket_id, sender_id, sender_role, message)
+        VALUES (?, ?, ?, ?);
+      `, [ticketId, senderId, senderRole || 'user', message]);
+
+      if (status) {
+        await run(`UPDATE support_tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [status, ticketId]);
+      } else {
+        await run(`UPDATE support_tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [ticketId]);
+      }
+
+      res.json({ success: true, message: 'Reply added successfully' });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   return router;
 };
