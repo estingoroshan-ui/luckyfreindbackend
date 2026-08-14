@@ -96,7 +96,7 @@ export const seedData = async () => {
         INSERT INTO users (full_name, email, mobile, password, gender, dob, city, role, referral_code, status)
         VALUES (?, ?, ?, 'password123', 'male', '1996-05-12', ?, 'male', ?, 'active');
       `, [m.name, m.email, m.mobile, m.city, `MALE${100 + i}`]);
-      
+
       const userId = res.lastID;
       await run(`
         INSERT INTO wallets (user_id, balance, promo_balance, total_recharged, total_spent)

@@ -6,6 +6,17 @@ const router = express.Router();
 
 export const createApiRouter = (io) => {
 
+  // --- MANUAL DB SEED TRIGGER ---
+  router.get('/seed', async (req, res) => {
+    try {
+      const { seedData } = await import('../seed.js');
+      await seedData();
+      res.json({ success: true, message: 'Database seeded successfully with sample creators, settings, and gifts!' });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // --- APP SETTINGS & BRANDING ---
   router.get('/settings', async (req, res) => {
     try {
@@ -292,7 +303,7 @@ export const createApiRouter = (io) => {
       `, [userId, amount, bonus || 0, txnRef, paymentMethod || 'UPI', `Recharge tier ₹${amount} (+₹${bonus || 0} bonus)`]);
 
       const updatedWallet = await getOne(`SELECT balance FROM wallets WHERE user_id = ?`, [userId]);
-      
+
       io.to(`user_${userId}`).emit('wallet_updated', { balance: updatedWallet.balance });
 
       res.json({ success: true, balance: updatedWallet.balance, txnRef });
@@ -486,7 +497,7 @@ export const createApiRouter = (io) => {
       `, [senderId, gift.price, `Sent Virtual Gift: ${gift.name}`]);
 
       const updatedWallet = await getOne(`SELECT balance FROM wallets WHERE user_id = ?`, [senderId]);
-      
+
       io.to(`user_${receiverId}`).emit('gift_received', {
         giftName: gift.name,
         giftIcon: gift.icon,
