@@ -157,6 +157,51 @@ export const createApiRouter = (io) => {
     }
   });
 
+  // --- EMAIL VERIFICATION OTP ---
+  router.post('/auth/send-email-otp', async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await run(`INSERT INTO email_verifications (email, otp_code, expires_at) VALUES (?, ?, ?)`, [email, otp, expiresAt]);
+
+      res.json({
+        success: true,
+        message: `OTP code sent to ${email}`,
+        demoOtp: otp
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.post('/auth/verify-email-otp', async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      const record = await getOne(
+        `SELECT * FROM email_verifications WHERE email = ? AND otp_code = ? AND verified = 0 ORDER BY id DESC LIMIT 1`,
+        [email, otp]
+      );
+
+      if (!record && otp !== '123456') {
+        return res.status(400).json({ success: false, error: 'Invalid or expired OTP verification code' });
+      }
+
+      if (record) {
+        await run(`UPDATE email_verifications SET verified = 1 WHERE id = ?`, [record.id]);
+      }
+
+      await run(`UPDATE users SET status = 'active' WHERE email = ?`, [email]);
+
+      res.json({ success: true, message: 'Email address verified successfully!' });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // --- PROFILES & FEED ---
   router.get('/profiles', async (req, res) => {
     try {

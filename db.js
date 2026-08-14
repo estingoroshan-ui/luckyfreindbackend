@@ -283,6 +283,17 @@ export const initDb = async () => {
     );
   `);
 
+  // Email Verifications table
+  await run(`
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      otp_code TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      verified INTEGER DEFAULT 0
+    );
+  `);
+
   // Subscription Plans table
   await run(`
     CREATE TABLE IF NOT EXISTS subscription_plans (
